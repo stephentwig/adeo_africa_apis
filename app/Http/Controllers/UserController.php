@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use function PHPUnit\Framework\throwException;
 
 class UserController extends Controller
@@ -13,10 +15,10 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function home($userDetails)
     {
         //
-        return "Adeo Africa APIs";
+        return $userDetails;
     }
 
     /**
@@ -24,9 +26,61 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function login(Request $request)
     {
-        //
+        /* if $email  get to see if email exist
+
+            route to index() -
+        */
+
+         $hashedPassword = Hash::make($request->password);
+
+        if (isset($request->email) && isset($request->password)) {
+
+            if (User::where('email', $request->email)->exists()) {
+
+                $user = User::where('email', $request->email)->get();
+
+                return response()->json([
+                    "message" => "Login successful",
+                    "data" => $user
+                ], 200);
+
+            } else {
+
+                return response()->json([
+                    "message" => "Wrong Email/Phone provided."
+                ], 404);
+
+            }
+        }
+
+         elseif (isset($request->phone) && isset($request->password)) {
+            if (User::where('phone', $request->phone)->exists()) {
+
+                $user = User::where('phone', $request->phone)->get();
+
+                return response()->json([
+                    "message" => "Login successful",
+                    "data" => $user
+                ], 200);
+
+            } else {
+
+                return response()->json([
+                    "message" => "Wrong Email/Phone/Password provided."
+                ], 404);
+
+            }
+        }
+        else {
+
+            return response()->json([
+                "message" => "Wrong Email/Phone/Password provided."
+            ], 404);
+
+        }
+
     }
 
     /**
@@ -51,12 +105,12 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->phone = $request->phone;
-        $user->password = sha1($request->password);
 
+        if($request->password === $request->repeat_password){
 
-        if($user->password === sha1($request->repeat_password)){
-
+            $user->password = Hash::make($request->password);
             $user->save();
+
             return response()->json([
                 "message" => "User account created."
             ], 201);
